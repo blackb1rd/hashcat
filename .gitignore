@@ -23,3 +23,5 @@ obj/*.o
 obj/*.a
 include/CL
 tools/luks_tests
+tags
+test_*/**
