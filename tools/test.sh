@@ -26,7 +26,7 @@ LUKS_MODE="14600"
 
 # missing hash types: 5200
 
-HASH_TYPES=$(ls "${TDIR}"/test_modules/*.pm | sed -E 's/.*m0*([0-9]+).pm/\1/')
+HASH_TYPES=$(find "${TDIR}"/test_modules/*.pm | sed -E 's/.*m0*([0-9]+).pm/\1/')
 HASH_TYPES="${HASH_TYPES} ${TC_MODES} ${VC_MODES} ${LUKS_MODE}"
 HASH_TYPES=$(echo -n "${HASH_TYPES}" | tr ' ' '\n' | sort -u -n | tr '\n' ' ')
 
@@ -168,10 +168,10 @@ function init()
   rm -rf "${OUTD}/${hash_type}.sh" "${OUTD}/${hash_type}_passwords.txt" "${OUTD}/${hash_type}_hashes.txt"
 
   # Exclude TrueCrypt and VeraCrypt testing modes
-  if is_in_array "${hash_type}" ${TC_MODES}; then
+  if is_in_array "${hash_type}" "${TC_MODES}"; then
     return 0
   fi
-  if is_in_array "${hash_type}" ${VC_MODES}; then
+  if is_in_array "${hash_type}" "${VC_MODES}"; then
     return 0
   fi
 
@@ -209,7 +209,7 @@ function init()
       # download:
 
       if ! wget -q "${luks_tests_url}" >/dev/null 2>/dev/null; then
-        cd - >/dev/null
+        cd - || exit >/dev/null
         echo "ERROR: Could not fetch the luks test files from this url: ${luks_tests_url}"
         exit 1
       fi
@@ -305,7 +305,7 @@ function init()
 
         # add splitted password to dicts
         echo "${pass}" | cut -c -${p0} >> "${OUTD}/${hash_type}_dict1"
-        echo "${pass}" | cut -c ${p1}- >> "${OUTD}/${hash_type}_dict2"
+        echo "${pass}" | cut -c "${p1}"- >> "${OUTD}/${hash_type}_dict2"
       elif [ "${pass_len}" -eq 1 ]; then
         echo "${pass}" >> "${OUTD}/${hash_type}_dict1"
         echo >> "${OUTD}/${hash_type}_dict2"
@@ -388,7 +388,7 @@ function status()
   if [ "${RET}" -ne 0 ]; then
     case ${RET} in
       1)
-        if ! is_in_array "${hash_type}" ${NEVER_CRACK_ALGOS}; then
+        if ! is_in_array "${hash_type}" "${NEVER_CRACK_ALGOS}"; then
 
            echo "password not found, cmdline : ${CMD}" >> "${OUTD}/logfull.txt" 2>> "${OUTD}/logfull.txt"
            e_nf=$((e_nf + 1))
@@ -423,7 +423,7 @@ function attack_0()
 {
   file_only=0
 
-  if is_in_array "${hash_type}" ${FILE_BASED_ALGOS}; then
+  if is_in_array "${hash_type}" "${FILE_BASED_ALGOS}"; then
 
     file_only=1
 
@@ -441,7 +441,7 @@ function attack_0()
 
     max=32
 
-    if is_in_array "${hash_type}" ${TIMEOUT_ALGOS}; then
+    if is_in_array "${hash_type}" "${TIMEOUT_ALGOS}"; then
 
       max=12
 
@@ -484,7 +484,7 @@ function attack_0()
 
       echo -n "[ len $((i + 1)) ] " >> "${OUTD}/logfull.txt" 2>> "${OUTD}/logfull.txt"
 
-      output=$(echo "${pass}" | ./${BIN} ${OPTS} -a 0 -m ${hash_type} "${hash}" 2>&1)
+      output=$(echo "${pass}" | ./"${BIN}" ${OPTS} -a 0 -m ${hash_type} "${hash}" 2>&1)
 
       pass=${pass_old}
 
@@ -563,7 +563,7 @@ function attack_0()
 
     CMD="cat ${OUTD}/${hash_type}_passwords.txt | ./${BIN} ${OPTS} -a 0 -m ${hash_type} ${hash_file}"
 
-    output=$(./${BIN} ${OPTS} -a 0 -m ${hash_type} ${hash_file} < ${OUTD}/${hash_type}_passwords.txt 2>&1)
+    output=$(./${BIN} ${OPTS} -a 0 -m ${hash_type} ${hash_file} < "${OUTD}/${hash_type}_passwords.txt" 2>&1)
 
     ret=${?}
 
@@ -622,7 +622,7 @@ function attack_1()
 {
   file_only=0
 
-  if is_in_array "${hash_type}" ${FILE_BASED_ALGOS}; then
+  if is_in_array "${hash_type}" "${FILE_BASED_ALGOS}"; then
 
     file_only=1
 
@@ -675,9 +675,6 @@ function attack_1()
           line_dict1=$(sed -n ${line_nr}p "${dict1}")
           line_dict2=$(sed -n ${line_nr}p "${dict2}")
           line_num=$(wc -l "${dict1}" | sed -E 's/ *([0-9]+) .*$/\1/')
-
-          line_dict1_orig=${line_dict1}
-          line_dict2_orig=${line_dict2}
 
           if [ "${#line_dict1}" -ge 6 ]; then
             line_dict1=$(echo "${line_dict1}" | cut -b 7-) # skip the first 6 chars
@@ -3091,12 +3088,12 @@ if [ "${PACKAGE}" -eq 1 ]; then
 
   if [ "${copy_tc_dir}" -eq 1 ]; then
     mkdir "${OUTD}/tc_tests/"
-    cp ${TDIR}/tc_tests/* "${OUTD}/tc_tests/"
+    cp "${TDIR}/tc_tests/*" "${OUTD}/tc_tests/"
   fi
 
   if [ "${copy_vc_dir}" -eq 1 ]; then
     mkdir "${OUTD}/vc_tests/"
-    cp ${TDIR}/vc_tests/* "${OUTD}/vc_tests/"
+    cp "${TDIR}/vc_tests/*" "${OUTD}/vc_tests/"
   fi
 
   # if we package from a given folder, we need to check if e.g. the files needed for multi mode are there
