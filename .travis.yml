@@ -13,4 +13,5 @@ before_install:
         exit
       fi
 script:
+  - bash -c 'shopt -s globstar nullglob; shellcheck **/*.{sh,ksh,bash}'
   - make
